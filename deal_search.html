@@ -6,38 +6,31 @@
   <title>ડીલ સર્ચ</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 10px; }
-    #filters { display: flex; flex-wrap: wrap; gap: 10px; }
-    label { margin-right: 5px; }
+    #filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    label { margin-right: 5px; font-weight: bold; }
     select { padding: 5px; }
     #result { margin-top: 20px; }
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; white-space: normal; word-wrap: break-word; }
     th { background-color: #f2f2f2; font-weight: bold; }
     tbody tr:nth-child(even) { background-color: #f9f9f9; }
-    .error { color: red; }
-    @media (max-width: 600px) {
-      table { display: none; }
-      .deal-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
-      .deal-card p { margin: 5px 0; }
-    }
-    @media (min-width: 601px) {
-      #result { overflow-x: auto; }
-      table { min-width: 1000px; }
-    }
+    .error { color: red; font-size: 18px; }
+    @media (max-width: 600px) { #filters { flex-direction: column; } table { font-size: 14px; } }
+    @media (min-width: 601px) { #result { overflow-x: auto; } table { min-width: 1000px; } }
   </style>
 </head>
 <body>
   <div id="filters"></div>
   <div id="result"></div>
   <script>
-    const apiUrl = https://sheetdb.io/api/v1/z0yawz4vjuymz'; // તમારી API લિંક
+    const apiUrl = 'https://sheetdb.io/api/v1/z0yawz4vjuymz'; // અહીં નવી API લિંક નાખો
     let data = [];
     const selects = {};
     const headers = ["DEAL CODE", "CAST", "FLET", "HOME", "SHOPE", "RANGE", "LOCATION", "ADDISNAL", "LINK OF DEAL", "PHOTO/VEDIO LINK"];
 
-    fetch(apiUrl)
+    fetch(apiUrl, { method: 'GET', mode: 'cors' })
       .then(response => {
-        if (!response.ok) throw new Error('APIમાં ભૂલ: ' + response.status);
+        if (!response.ok) throw new Error('APIમાં ભૂલ: ' + response.status + ' - ' + response.statusText);
         return response.json();
       })
       .then(items => {
@@ -46,6 +39,7 @@
           return;
         }
         data = items;
+        console.log('API ડેટા:', data);
         populateFilters();
         filterData();
       })
@@ -56,16 +50,13 @@
 
     function populateFilters() {
       const filtersContainer = document.getElementById('filters');
+      
       const propertyLabel = document.createElement('label'); propertyLabel.textContent = 'પ્રોપર્ટીનો પ્રકાર: ';
       const propertySelect = document.createElement('select'); propertySelect.id = 'select-property';
       ['All', 'HOME', 'FLET', 'SHOPE'].forEach(optionValue => {
         const option = document.createElement('option'); option.value = optionValue; option.textContent = optionValue; propertySelect.appendChild(option);
       });
-      propertySelect.onchange = updateDealOptions; filtersContainer.appendChild(propertyLabel); filtersContainer.appendChild(propertySelect); selects['property'] = propertySelect;
-
-      const dealLabel = document.createElement('label'); dealLabel.textContent = 'ડીલનો પ્રકાર: ';
-      const dealSelect = document.createElement('select'); dealSelect.id = 'select-deal'; dealSelect.disabled = true; dealSelect.onchange = filterData;
-      filtersContainer.appendChild(dealLabel); filtersContainer.appendChild(dealSelect); selects['deal'] = dealSelect;
+      propertySelect.onchange = filterData; filtersContainer.appendChild(propertyLabel); filtersContainer.appendChild(propertySelect); selects['property'] = propertySelect;
 
       const locationLabel = document.createElement('label'); locationLabel.textContent = 'લોકેશન: ';
       const locationSelect = document.createElement('select'); locationSelect.id = 'select-LOCATION';
@@ -82,52 +73,46 @@
       rangeSelect.onchange = filterData; filtersContainer.appendChild(rangeLabel); filtersContainer.appendChild(rangeSelect); selects['RANGE'] = rangeSelect;
     }
 
-    function updateDealOptions() {
-      const propertySelect = selects['property']; const dealSelect = selects['deal']; dealSelect.innerHTML = '';
-      const allOption = document.createElement('option'); allOption.value = 'All'; allOption.textContent = 'બધા'; dealSelect.appendChild(allOption);
-      const selectedProperty = propertySelect.value;
-      if (selectedProperty !== 'All') {
-        const uniqueDeals = [...new Set(data.filter(item => item[selectedProperty] && item[selectedProperty].trim() !== '').map(item => item[selectedProperty]))].sort();
-        uniqueDeals.forEach(value => { const option = document.createElement('option'); option.value = value; option.textContent = value; dealSelect.appendChild(option); });
-        dealSelect.disabled = false;
-      } else { dealSelect.disabled = true; }
-      filterData();
-    }
-
     function filterData() {
       let filtered = data;
-      const propertySelect = selects['property']; const dealSelect = selects['deal']; const locationSelect = selects['LOCATION']; const rangeSelect = selects['RANGE'];
-      const selectedProperty = propertySelect.value; const selectedDeal = dealSelect.value; const selectedLocation = locationSelect.value; const selectedRange = rangeSelect.value;
+      const propertySelect = selects['property']; const locationSelect = selects['LOCATION']; const rangeSelect = selects['RANGE'];
+      const selectedProperty = propertySelect.value; const selectedLocation = locationSelect.value; const selectedRange = rangeSelect.value;
+
       if (selectedProperty !== 'All') {
         filtered = filtered.filter(item => item[selectedProperty] && item[selectedProperty].trim() !== '');
-        if (selectedDeal !== 'All') { filtered = filtered.filter(item => item[selectedProperty] === selectedDeal); }
       }
-      if (selectedLocation !== 'All') { filtered = filtered.filter(item => item['LOCATION'] === selectedLocation); }
-      if (selectedRange !== 'All') { filtered = filtered.filter(item => item['RANGE'] === selectedRange); }
+      if (selectedLocation !== 'All') {
+        filtered = filtered.filter(item => item['LOCATION'] === selectedLocation);
+      }
+      if (selectedRange !== 'All') {
+        filtered = filtered.filter(item => item['RANGE'] === selectedRange);
+      }
       displayResults(filtered);
     }
 
     function displayResults(deals) {
       const result = document.getElementById('result'); result.innerHTML = '';
-      if (deals.length === 0) { result.textContent = 'કોઈ ડીલ મળી નહીં'; return; }
-      const table = document.createElement('table'); const thead = document.createElement('thead'); const headerRow = document.createElement('tr');
-      headers.forEach(header => { const th = document.createElement('th'); th.textContent = header; headerRow.appendChild(th); });
+      if (deals.length === 0) {
+        result.textContent = 'કોઈ ડીલ મળી નહીં';
+        return;
+      }
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headers.forEach(header => {
+        const th = document.createElement('th'); th.textContent = header; headerRow.appendChild(th);
+      });
       thead.appendChild(headerRow); table.appendChild(thead);
+
       const tbody = document.createElement('tbody');
       deals.forEach(deal => {
         const row = document.createElement('tr');
-        headers.forEach(header => { const td = document.createElement('td'); td.textContent = deal[header] || 'N/A'; row.appendChild(td); });
+        headers.forEach(header => {
+          const td = document.createElement('td'); td.textContent = deal[header] || 'N/A'; row.appendChild(td);
+        });
         tbody.appendChild(row);
       });
       table.appendChild(tbody); result.appendChild(table);
-
-      const listContainer = document.createElement('div'); listContainer.className = 'deal-list';
-      deals.forEach(deal => {
-        const card = document.createElement('div'); card.className = 'deal-card';
-        headers.forEach(header => { const p = document.createElement('p'); p.innerHTML = `<strong>${header}:</strong> ${deal[header] || 'N/A'}`; card.appendChild(p); });
-        listContainer.appendChild(card);
-      });
-      result.appendChild(listContainer);
     }
   </script>
 </body>
