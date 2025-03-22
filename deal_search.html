@@ -1,119 +1,203 @@
 <!DOCTYPE html>
 <html lang="gu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ડીલ સર્ચ</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 10px; }
-    #filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    label { margin-right: 5px; font-weight: bold; }
-    select { padding: 5px; }
-    #result { margin-top: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; white-space: normal; word-wrap: break-word; }
-    th { background-color: #f2f2f2; font-weight: bold; }
-    tbody tr:nth-child(even) { background-color: #f9f9f9; }
-    .error { color: red; font-size: 18px; }
-    @media (max-width: 600px) { #filters { flex-direction: column; } table { font-size: 14px; } }
-    @media (min-width: 601px) { #result { overflow-x: auto; } table { min-width: 1000px; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Deals Filter</title>
+    <style>
+        /* Responsive Design */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        select, input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="filters"></div>
-  <div id="result"></div>
-  <script>
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbxNLzDfOB-zeahJuRm6O7rY86ij_GGBeIKE-VWFBTDpWc9VYcz02lh2wgDzlH1Eyiej1w/exec'; // Google Apps Script URL
-    let data = [];
-    const selects = {};
-    const headers = ["DEAL CODE", "CAST", "FLET", "HOME", "SHOPE", "RANGE", "LOCATION", "ADDISNAL", "LINK OF DEAL", "PHOTO/VEDIO LINK"];
+    <h1>Property Deals Filter</h1>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <div class="filter-item">
+            <label>પ્રોપર્ટીનો પ્રકાર:</label>
+            <select id="propertyType">
+                <option value="all">બધા</option>
+                <option value="HOME">HOME</option>
+                <option value="FLET">FLET</option>
+                <option value="SHOPE">SHOPE</option>
+            </select>
+        </div>
+        
+        <div class="filter-item">
+            <label>લોકેશન:</label>
+            <select id="location">
+                <option value="all">બધા</option>
+            </select>
+        </div>
+        
+        <div class="filter-item">
+            <label>બજેટ રેંજ:</label>
+            <input type="text" id="budgetRange" placeholder="ઉદા. 10L-20L">
+        </div>
+    </div>
 
-    fetch(apiUrl, { method: 'GET', mode: 'cors' })
-      .then(response => {
-        if (!response.ok) throw new Error('APIમાં ભૂલ: ' + response.status + ' - ' + response.statusText);
-        return response.json();
-      })
-      .then(items => {
-        if (!items || items.length === 0) {
-          document.getElementById('result').innerHTML = '<p class="error">કોઈ ડેટા નથી</p>';
-          return;
+    <!-- Data Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>DEAL CODE</th>
+                <th>CAST</th>
+                <th>FLET</th>
+                <th>HOME</th>
+                <th>SHOPE</th>
+                <th>RANGE</th>
+                <th>LOCATION</th>
+                <th>ADDISNAL</th>
+                <th>LINK OF DEAL</th>
+                <th>PHOTO/VIDEO LINK</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        const API_URL = "https://sheetdb.io/api/v1/2zxgfpd8lb4qo";
+        
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL);
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
         }
-        data = items;
-        console.log('API ડેટા:', data);
-        populateFilters();
-        filterData();
-      })
-      .catch(error => {
-        console.error('ભૂલ:', error);
-        document.getElementById('result').innerHTML = '<p class="error">API કનેક્શનમાં ભૂલ: ' + error.message + '</p>';
-      });
 
-    function populateFilters() {
-      const filtersContainer = document.getElementById('filters');
-      
-      const propertyLabel = document.createElement('label'); propertyLabel.textContent = 'પ્રોપર્ટીનો પ્રકાર: ';
-      const propertySelect = document.createElement('select'); propertySelect.id = 'select-property';
-      ['All', 'HOME', 'FLET', 'SHOPE'].forEach(optionValue => {
-        const option = document.createElement('option'); option.value = optionValue; option.textContent = optionValue; propertySelect.appendChild(option);
-      });
-      propertySelect.onchange = filterData; filtersContainer.appendChild(propertyLabel); filtersContainer.appendChild(propertySelect); selects['property'] = propertySelect;
+        function populateFilters(data) {
+            const locations = [...new Set(data.map(item => item.LOCATION))];
+            const locationSelect = document.getElementById('location');
+            
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                option.textContent = location;
+                locationSelect.appendChild(option);
+            });
+        }
 
-      const locationLabel = document.createElement('label'); locationLabel.textContent = 'લોકેશન: ';
-      const locationSelect = document.createElement('select'); locationSelect.id = 'select-LOCATION';
-      const allLocationOption = document.createElement('option'); allLocationOption.value = 'All'; allLocationOption.textContent = 'બધા'; locationSelect.appendChild(allLocationOption);
-      const uniqueLocations = [...new Set(data.map(item => item['LOCATION']).filter(v => v && v.trim() !== ''))].sort();
-      uniqueLocations.forEach(value => { const option = document.createElement('option'); option.value = value; option.textContent = value; locationSelect.appendChild(option); });
-      locationSelect.onchange = filterData; filtersContainer.appendChild(locationLabel); filtersContainer.appendChild(locationSelect); selects['LOCATION'] = locationSelect;
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
 
-      const rangeLabel = document.createElement('label'); rangeLabel.textContent = 'બજેટ: ';
-      const rangeSelect = document.createElement('select'); rangeSelect.id = 'select-RANGE';
-      const allRangeOption = document.createElement('option'); allRangeOption.value = 'All'; allRangeOption.textContent = 'બધા'; rangeSelect.appendChild(allRangeOption);
-      const uniqueRanges = [...new Set(data.map(item => item['RANGE']).filter(v => v && v.trim() !== ''))].sort();
-      uniqueRanges.forEach(value => { const option = document.createElement('option'); option.value = value; option.textContent = value; rangeSelect.appendChild(option); });
-      rangeSelect.onchange = filterData; filtersContainer.appendChild(rangeLabel); filtersContainer.appendChild(rangeSelect); selects['RANGE'] = rangeSelect;
-    }
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.DEAL_CODE || ''}</td>
+                    <td>${item.CAST || ''}</td>
+                    <td>${item.FLET || ''}</td>
+                    <td>${item.HOME || ''}</td>
+                    <td>${item.SHOPE || ''}</td>
+                    <td>${item.RANGE || ''}</td>
+                    <td>${item.LOCATION || ''}</td>
+                    <td>${item.ADDISNAL || ''}</td>
+                    <td><a href="${item.LINK_OF_DEAL}" target="_blank">View Deal</a></td>
+                    <td><a href="${item.PHOTO_VEDIO_LINK}" target="_blank">Media</a></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
 
-    function filterData() {
-      let filtered = data;
-      const propertySelect = selects['property']; const locationSelect = selects['LOCATION']; const rangeSelect = selects['RANGE'];
-      const selectedProperty = propertySelect.value; const selectedLocation = locationSelect.value; const selectedRange = rangeSelect.value;
+        function filterData(data) {
+            const propertyType = document.getElementById('propertyType').value;
+            const location = document.getElementById('location').value;
+            const budgetRange = document.getElementById('budgetRange').value;
 
-      if (selectedProperty !== 'All') {
-        filtered = filtered.filter(item => item[selectedProperty] && item[selectedProperty].trim() !== '');
-      }
-      if (selectedLocation !== 'All') {
-        filtered = filtered.filter(item => item['LOCATION'] === selectedLocation);
-      }
-      if (selectedRange !== 'All') {
-        filtered = filtered.filter(item => item['RANGE'] === selectedRange);
-      }
-      displayResults(filtered);
-    }
+            return data.filter(item => {
+                // Property Type Filter
+                if (propertyType !== 'all' && !item[propertyType]) return false;
+                
+                // Location Filter
+                if (location !== 'all' && item.LOCATION !== location) return false;
+                
+                // Budget Range Filter
+                if (budgetRange) {
+                    const [min, max] = budgetRange.split('-').map(Number);
+                    const itemRange = item.RANGE.replace('L', '').split('-').map(Number);
+                    return itemRange[0] >= min && itemRange[1] <= max;
+                }
+                
+                return true;
+            });
+        }
 
-    function displayResults(deals) {
-      const result = document.getElementById('result'); result.innerHTML = '';
-      if (deals.length === 0) {
-        result.textContent = 'કોઈ ડીલ મળી નહીં';
-        return;
-      }
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      headers.forEach(header => {
-        const th = document.createElement('th'); th.textContent = header; headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow); table.appendChild(thead);
+        async function initialize() {
+            const data = await fetchData();
+            populateFilters(data);
+            
+            // Event Listeners
+            document.querySelectorAll('.filters select, #budgetRange').forEach(element => {
+                element.addEventListener('change', () => renderTable(filterData(data)));
+            });
+            
+            document.getElementById('budgetRange').addEventListener('input', () => renderTable(filterData(data)));
+            
+            // Initial render
+            renderTable(data);
+        }
 
-      const tbody = document.createElement('tbody');
-      deals.forEach(deal => {
-        const row = document.createElement('tr');
-        headers.forEach(header => {
-          const td = document.createElement('td'); td.textContent = deal[header] || 'N/A'; row.appendChild(td);
-        });
-        tbody.appendChild(row);
-      });
-      table.appendChild(tbody); result.appendChild(table);
-    }
-  </script>
+        initialize();
+    </script>
 </body>
 </html>
