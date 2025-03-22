@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Deals Filter</title>
     <style>
-        /* Responsive Design */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
             background-color: #f5f5f5;
         }
-
         .filters {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -22,41 +20,34 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .filter-item {
             display: flex;
             flex-direction: column;
         }
-
         select, input {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             margin-top: 5px;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         th, td {
             padding: 12px;
             border: 1px solid #ddd;
             text-align: left;
         }
-
         th {
             background-color: #f8f9fa;
         }
-
         a {
             color: #007bff;
             text-decoration: none;
         }
-
         @media (max-width: 768px) {
             table {
                 display: block;
@@ -106,98 +97,122 @@
                 <th>LOCATION</th>
                 <th>ADDISNAL</th>
                 <th>LINK OF DEAL</th>
-                <th>PHOTO/VIDEO LINK</th>
+                <th>PHOTO/VEDIO LINK</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
 
     <script>
-        const API_URL = "https://sheetdb.io/api/v1/2zxgfpd8lb4qo";
-        
-        async function fetchData() {
-            try {
-                const response = await fetch(API_URL);
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                return [];
-            }
-        }
-
-        function populateFilters(data) {
-            const locations = [...new Set(data.map(item => item.LOCATION))];
-            const locationSelect = document.getElementById('location');
+        document.addEventListener("DOMContentLoaded", function() {
+            const API_URL = "https://sheetdb.io/api/v1/2zxgfpd8lb4qo";
             
-            locations.forEach(location => {
-                const option = document.createElement('option');
-                option.value = location;
-                option.textContent = location;
-                locationSelect.appendChild(option);
-            });
-        }
+            async function fetchData() {
+                try {
+                    const response = await fetch(API_URL);
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    return [];
+                }
+            }
 
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.DEAL_CODE || ''}</td>
-                    <td>${item.CAST || ''}</td>
-                    <td>${item.FLET || ''}</td>
-                    <td>${item.HOME || ''}</td>
-                    <td>${item.SHOPE || ''}</td>
-                    <td>${item.RANGE || ''}</td>
-                    <td>${item.LOCATION || ''}</td>
-                    <td>${item.ADDISNAL || ''}</td>
-                    <td><a href="${item.LINK_OF_DEAL}" target="_blank">View Deal</a></td>
-                    <td><a href="${item.PHOTO_VEDIO_LINK}" target="_blank">Media</a></td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function filterData(data) {
-            const propertyType = document.getElementById('propertyType').value;
-            const location = document.getElementById('location').value;
-            const budgetRange = document.getElementById('budgetRange').value;
-
-            return data.filter(item => {
-                // Property Type Filter
-                if (propertyType !== 'all' && !item[propertyType]) return false;
+            function populateFilters(data) {
+                const locationSelect = document.getElementById("location");
                 
-                // Location Filter
-                if (location !== 'all' && item.LOCATION !== location) return false;
+                // Null check for safety
+                if (!locationSelect) {
+                    console.error("Location select element not found!");
+                    return;
+                }
+
+                // Clear existing options
+                locationSelect.innerHTML = '<option value="all">બધા</option>';
                 
-                // Budget Range Filter
-                if (budgetRange) {
-                    const [min, max] = budgetRange.split('-').map(Number);
-                    const itemRange = item.RANGE.replace('L', '').split('-').map(Number);
-                    return itemRange[0] >= min && itemRange[1] <= max;
+                // Get unique locations
+                const locations = [...new Set(data.map(item => item.LOCATION))];
+                
+                locations.forEach(location => {
+                    const option = document.createElement("option");
+                    option.value = location;
+                    option.textContent = location;
+                    locationSelect.appendChild(option);
+                });
+            }
+
+            function renderTable(data) {
+                const tbody = document.getElementById("tableBody");
+                tbody.innerHTML = '';
+
+                data.forEach(item => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${item["DEAL CODE"] || ''}</td>
+                        <td>${item.CAST || ''}</td>
+                        <td>${item.FLET || ''}</td>
+                        <td>${item.HOME || ''}</td>
+                        <td>${item.SHOPE || ''}</td>
+                        <td>${item.RANGE || ''}</td>
+                        <td>${item.LOCATION || ''}</td>
+                        <td>${item.ADDISNAL || ''}</td>
+                        <td><a href="${item["LINK OF DEAL"]}" target="_blank">View Deal</a></td>
+                        <td><a href="${item["PHOTO/VEDIO LINK"]}" target="_blank">Media</a></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            function filterData(data) {
+                const propertyType = document.getElementById("propertyType").value;
+                const location = document.getElementById("location").value;
+                const budgetRange = document.getElementById("budgetRange").value;
+
+                return data.filter(item => {
+                    // Property Type Filter
+                    if (propertyType !== 'all' && !item[propertyType]) return false;
+                    
+                    // Location Filter
+                    if (location !== 'all' && item.LOCATION !== location) return false;
+                    
+                    // Budget Range Filter
+                    if (budgetRange) {
+                        const [minStr, maxStr] = budgetRange.split('-');
+                        const min = parseInt(minStr.replace('L', '')) * 100000;
+                        const max = parseInt(maxStr.replace('L', '')) * 100000;
+                        
+                        const [itemMinStr, itemMaxStr] = item.RANGE.split('-');
+                        const itemMin = parseInt(itemMinStr.replace('L', '')) * 100000;
+                        const itemMax = parseInt(itemMaxStr.replace('L', '')) * 100000;
+                        
+                        return itemMin >= min && itemMax <= max;
+                    }
+                    
+                    return true;
+                });
+            }
+
+            async function initialize() {
+                const data = await fetchData();
+                console.log("API Response:", data); // For debugging
+                
+                if (data.length === 0) {
+                    console.error("No data received from API");
+                    return;
                 }
                 
-                return true;
-            });
-        }
+                populateFilters(data);
+                
+                // Event Listeners
+                document.querySelectorAll('.filters select, #budgetRange').forEach(element => {
+                    element.addEventListener("change", () => renderTable(filterData(data)));
+                });
+                
+                // Initial render
+                renderTable(data);
+            }
 
-        async function initialize() {
-            const data = await fetchData();
-            populateFilters(data);
-            
-            // Event Listeners
-            document.querySelectorAll('.filters select, #budgetRange').forEach(element => {
-                element.addEventListener('change', () => renderTable(filterData(data)));
-            });
-            
-            document.getElementById('budgetRange').addEventListener('input', () => renderTable(filterData(data)));
-            
-            // Initial render
-            renderTable(data);
-        }
-
-        initialize();
+            initialize();
+        });
     </script>
 </body>
 </html>
